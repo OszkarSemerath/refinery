@@ -60,6 +60,7 @@ import tools.refinery.store.reasoning.translator.multiplicity.ConstrainedMultipl
 import tools.refinery.store.reasoning.translator.multiplicity.Multiplicity;
 import tools.refinery.store.reasoning.translator.multiplicity.UnconstrainedMultiplicity;
 import tools.refinery.store.reasoning.translator.predicate.BasePredicateTranslator;
+import tools.refinery.store.reasoning.translator.predicate.ErrorPredicateTranslatorWithUnitPropagation;
 import tools.refinery.store.reasoning.translator.predicate.PredicateTranslator;
 import tools.refinery.store.reasoning.translator.predicate.ShadowPredicateTranslator;
 import tools.refinery.store.statecoding.StateCoderBuilder;
@@ -734,6 +735,7 @@ public class ModelInitializer {
 	}
 
 	private void collectPredicates(ModelStoreBuilder storeBuilder) {
+
 		for (var importedProblem : importedProblems) {
 			for (var statement : importedProblem.getStatements()) {
 				switch (statement) {
@@ -793,8 +795,17 @@ public class ModelInitializer {
 		}
 		var parameterTypes = getParameterTypes(predicateDefinition, null);
 		var supersets = getSupersets(predicateDefinition);
-		var translator = new PredicateTranslator(partialRelation, query, parameterTypes, supersets, mutable,
-				defaultValue);
+		final PredicateTranslator translator;
+		if(predicateDefinition.getKind() == PredicateKind.ERROR) {
+			translator = new ErrorPredicateTranslatorWithUnitPropagation(partialRelation,query,parameterTypes,
+					supersets,mutable,defaultValue);
+		} else {
+//			translator = new PredicateTranslator(partialRelation, query, parameterTypes, supersets, mutable,
+//					defaultValue);
+			translator = new PredicateTranslator(partialRelation, query, parameterTypes, supersets, true,
+					defaultValue);
+		}
+
 		storeBuilder.with(translator);
 		var computedPredicate = predicateDefinition.getComputedValue();
 		if (computedPredicate != null) {
